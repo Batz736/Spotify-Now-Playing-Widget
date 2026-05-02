@@ -1,1 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spotify Widget Setup</title>
 
+<!-- Clean URL redirect -->
+<script>
+if (window.location.pathname.includes('/index.html')) {
+    const cleanURL = window.location.pathname.replace('/index.html', '/');
+    window.location.replace(cleanURL);
+}
+</script>
+
+<style>
+:root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --accent: #1DB954;
+    --text: #ffffff;
+    --subtext: #a7a7a7;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #0d0d0d, #000);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
+
+h1 {
+    margin: 0 0 10px;
+    font-size: 28px;
+    color: var(--accent);
+}
+
+.subtitle {
+    color: var(--subtext);
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+.step {
+    margin-bottom: 25px;
+}
+
+label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+    background: #0f0f0f;
+    color: white;
+    font-size: 14px;
+}
+
+.helper {
+    font-size: 12px;
+    color: var(--subtext);
+    margin-top: 6px;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    border-radius: 999px;
+    border: none;
+    background: var(--accent);
+    color: black;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #1ed760;
+    transform: scale(1.02);
+}
+
+.warning {
+    background: #2a1515;
+    border-left: 4px solid #ff4d4d;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 25px;
+}
+
+.result {
+    display: none;
+    margin-top: 25px;
+    padding: 20px;
+    background: #000;
+    border-radius: 10px;
+    border: 1px solid #222;
+}
+
+.code {
+    background: #0d0d0d;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    word-break: break-all;
+    color: var(--accent);
+    margin-bottom: 10px;
+}
+
+.copy-btn {
+    width: auto;
+    padding: 6px 12px;
+    background: #333;
+    color: white;
+    font-size: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+a { color: var(--accent); }
+code {
+    background: #1a1a1a;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎵 Spotify Widget Setup</h1>
+    <div class="subtitle">
+        Connect your Spotify account to power your Now Playing widget.
+    </div>
+
+    <div id="login-step">
+
+        <div class="warning">
+            ⚠️ Your data stays local. This runs entirely in your browser and only talks to Spotify.
+        </div>
+
+        <div class="step">
+            <label>Client ID</label>
+            <input type="text" id="clientId" placeholder="Paste your Spotify Client ID">
+
+            <div class="helper">
+                Don’t have one?  
+                <a href="https://developer.spotify.com/dashboard" target="_blank">Create a Spotify App</a><br>
+                Set Redirect URI to:<br>
+                <code>https://batz736.github.io/Spotify-Now-Playing-Widget/configure/</code>
+            </div>
+        </div>
+
+        <button onclick="login()">Connect Spotify</button>
+    </div>
+
+    <div id="result-step" class="result">
+        <h3>✅ You're connected</h3>
+        <p class="subtitle">Copy these into your widget config:</p>
+
+        <label>User ID</label>
+        <div class="code" id="displayUserId"></div>
+        <button class="copy-btn" onclick="copy('displayUserId')">Copy</button>
+
+        <label>Access Token</label>
+        <div class="code" id="displayToken"></div>
+        <button class="copy-btn" onclick="copy('displayToken')">Copy</button>
+
+        <p class="helper">
+            Token expires in ~1 hour. Use the auto-refresh method in the README for permanent setup.
+        </p>
+
+        <button onclick="location.reload()" style="background:#222;color:white;margin-top:10px;">
+            Start Over
+        </button>
+    </div>
+
+</div>
+
+<script>
+window.onload = function() {
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+
+        if (accessToken) {
+            document.getElementById('login-step').style.display = 'none';
+            document.getElementById('result-step').style.display = 'block';
+            document.getElementById('displayToken').innerText = accessToken;
+
+            fetch('https://api.spotify.com/v1/me', {
+                headers: { Authorization: 'Bearer ' + accessToken }
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('displayUserId').innerText = data.id;
+            })
+            .catch(() => {
+                document.getElementById('displayUserId').innerText = "Error fetching ID";
+            });
+        }
+    }
+};
+
+function login() {
+    const clientId = document.getElementById('clientId').value.trim();
+    if (!clientId) return alert("Enter your Client ID");
+
+    const redirectUri = "https://batz736.github.io/Spotify-Now-Playing-Widget/configure/";
+    const scopes = "user-read-playback-state user-read-currently-playing";
+
+    const url = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+
+    window.location.href = url;
+}
+
+function copy(id) {
+    navigator.clipboard.writeText(document.getElementById(id).innerText);
+    alert("Copied!");
+}
+</script>
+
+</body>
+</html>
