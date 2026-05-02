@@ -2,6 +2,8 @@
 
 > A clean, professional "Now Playing" display for your Spotify account. Designed for streamers, content creators, and anyone who wants to share what they're listening to.
 
+![Widget Preview](https://i.imgur.com/EMjinIo.png)
+
 ---
 
 ## 🔗 Quick Links
