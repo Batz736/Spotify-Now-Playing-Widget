@@ -29,28 +29,48 @@
 
 ---
 
-## 🚀 How to Set Up (Easy Mode)
 
-You don't need to be a coder to use this! Follow these 3 simple steps:
+## 🚀 Quick Start (No Coding Required!)
 
-### Step 1: Generate Your Credentials
-1. Click the **[Configuration Tool](https://batz736.github.io/Spotify-Now-Playing-Widget/configure/)**.
-2. Follow the on-screen instructions to log in with Spotify.
-3. The tool will generate your **User ID**, **Access Token**, and **Refresh Token**.
-4. **Copy** the final "Widget URL" provided by the tool.
+Follow these 3 simple steps to get your widget running in under 5 minutes.
 
-### Step 2: Add to OBS (for Streamers)
+### Step 1: Create a Spotify App
+*You need this so Spotify knows it's okay to share your music info with the widget.*
+
+1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Log in with your Spotify account.
+3. Click **"Create App"**.
+   - **App Name:** `My Stream Widget` (or anything you want).
+   - **App Description:** `Widget for my stream`.
+   - **Redirect URI:** This is important! Paste exactly this:
+     ```text
+     https://batz736.github.io/Spotify-Now-Playing-Widget/configure/
+     ```
+   - Check the box for "Non-commercial".
+4. Click **Save**.
+5. On the next screen, click **"Settings"** (top right).
+6. Find **Client ID** and click **"View Client Secret"**.
+   - 👉 **Copy both of these codes.** You will need them in Step 2.
+
+### Step 2: Generate Your Widget Link
+*Use our easy tool to connect your account securely.*
+
+1. Click here to open the **[Configuration Tool](https://batz736.github.io/Spotify-Now-Playing-Widget/configure/)**.
+2. Paste your **Client ID** and **Client Secret** into the boxes.
+3. Click **"Connect Spotify"**.
+4. A Spotify window will pop up asking for permission. Click **"Agree"**.
+5. You will see a green **"Authorization Complete"** screen.
+6. Click the big green **" Copy Link"** button.
+
+### Step 3: Add to OBS
 1. Open OBS Studio.
-2. In the **Sources** dock, click **+** and select **Browser**.
-3. Name it "Spotify Widget" and click OK.
-4. In the **URL** field, paste the **Widget URL** you got from Step 1.
+2. In the **Sources** box, click the **+** icon and select **Browser**.
+3. Name it `Spotify Widget` and click OK.
+4. In the **URL** field, **Paste** the link you copied in Step 2.
 5. Set **Width** to `400` and **Height** to `600`.
-6. Click **OK**. You should see your widget appear! 🎉
+6. Click **OK**.
 
-### Step 3: Test It
-1. Play a song on Spotify (Desktop or Web).
-2. Wait about 10–15 seconds.
-3. The widget should update with your album art, title, and progress bar.
+🎉 **Done!** Play a song on Spotify, and it should appear on your stream!
 
 ---
 
@@ -80,3 +100,31 @@ function updateClock() {
     });
     els.clock.textContent = `${timeString} CDT`; // <--- AND UPDATE THIS LABEL
 }
+```
+Replace 'America/Chicago' with your city's code from the list below:
+
+```javascript
+New York / Miami
+'America/New_York'
+Los Angeles / Seattle
+'America/Los_Angeles'
+London / UK
+'Europe/London'
+Paris / Berlin
+'Europe/Paris'
+Tokyo
+'Asia/Tokyo'
+Sydney
+'Australia/Sydney'
+```
+Save the file and refresh your Browser Source in OBS.
+---
+
+## ❓ Troubleshooting
+
+| Problem | Solution |
+| :--- | :--- |
+| **Widget says "Waiting..."** | 1. Make sure Spotify is actually playing music.<br>2. Did you wait 10 seconds? It takes a moment to load.<br>3. Try refreshing the Browser Source in OBS (Right-click source → Refresh). |
+| **Clock is wrong** | You skipped the "Fix Your Clock Timezone" step above! Go back and edit the `index.html` file. |
+| **Colors aren't changing** | This is normal if you are testing locally. Once hosted on GitHub Pages or OBS, it usually works fine. |
+| **Token Expired Error** | The link generated in Step 2 lasts for **1 hour**. If it stops working after an hour, just go back to the [Configuration Tool](https://batz736.github.io/Spotify-Now-Playing-Widget/configure/) and generate a new link. |
