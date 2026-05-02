@@ -1,4 +1,4 @@
-# 🎵 Spotify Now Playing Widget
+# 🎵 Spotify Now Playing Widget (Premium Users Only)
 
 > A clean, professional "Now Playing" display for your Spotify account. Designed for streamers, content creators, and anyone who wants to share what they're listening to.
 
