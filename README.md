@@ -128,3 +128,44 @@ Save the file and refresh your Browser Source in OBS.
 | **Clock is wrong** | You skipped the "Fix Your Clock Timezone" step above! Go back and edit the `index.html` file. |
 | **Colors aren't changing** | This is normal if you are testing locally. Once hosted on GitHub Pages or OBS, it usually works fine. |
 | **Token Expired Error** | The link generated in Step 2 lasts for **1 hour**. If it stops working after an hour, just go back to the [Configuration Tool](https://batz736.github.io/Spotify-Now-Playing-Widget/configure/) and generate a new link. |
+---
+
+## ❓ Do I Need to Edit the Code?
+
+**Short answer: No!** 
+
+If you use the **[Configuration Tool](https://batz736.github.io/Spotify-Now-Playing-Widget/configure/)**, the widget will work immediately—**no code editing required**.
+
+### How It Works:
+1. The Config Tool generates a special URL like: https://batz736.github.io/Spotify-Now-Playing-Widget?uid=123&token=abc&cid=xyz
+2. You paste that URL into OBS.
+3. The widget automatically reads your credentials from the URL parameters.
+4. ✨ It just works!
+
+### When Would You Edit the Code?
+Only if you want to:
+- 🔁 Set up **permanent auto-refresh** (requires PHP backend)
+- 💻 Host the files on your own server
+- 🛠️ Customize the widget's appearance or behavior
+
+For 99% of users, the Config Tool is all you need!
+---
+
+## 🔐 Security Reminder
+
+| Method | Where Tokens Are Stored | Token Expiry |
+|--------|------------------------|--------------|
+| **Config Tool (Easy)** | In the OBS Browser Source URL | ~1 hour (reconnect to refresh) |
+| **Hardcoded + PHP (Advanced)** | In `index.html` + server-side PHP script | Forever (auto-refreshes) |
+
+> ⚠️ **Never commit real tokens to a public GitHub repo!** If you hardcode values, use a **private repository** or environment variables.
+
+---
+
+## ✅ Summary for Your Users
+
+1. **Go to [Config Tool](https://batz736.github.io/Spotify-Now-Playing-Widget/configure/)** → Enter credentials → Connect Spotify → Copy Link → Paste in OBS → **Done!** 🎉
+2. **Don't touch the code** unless you want permanent auto-refresh or custom tweaks.
+3. **Only edit `index.html`** if you need to change the timezone (search for `America/Chicago`).
+
+> That's it! 🎵✨
