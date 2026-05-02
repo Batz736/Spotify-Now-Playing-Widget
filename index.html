@@ -334,30 +334,41 @@
 <script>
 (function() {
   // ==========================================
-  // --- USER SETTINGS (EDIT THIS PART) ---
+  // --- SMART CONFIG LOADER (URL + LocalStorage) ---
   // ==========================================
   
-  // 1. Your Spotify User ID
-  const CONFIG_USER_ID = "YOUR_SPOTIFY_USER_ID_HERE";
-
-  // 2. Your Access Token (Short lived, usually starts with BQC...)
-  const CONFIG_ACCESS_TOKEN = "YOUR_ACCESS_TOKEN_HERE";
-
-  // 3. Your Refresh Token (Long lived, usually starts with AQC...)
-  const CONFIG_REFRESH_TOKEN = "YOUR_REFRESH_TOKEN_HERE";
-
-  // 4. The URL to your PHP refresh script
+  // 1. Try to get config from URL parameters (from Config Tool)
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  let CONFIG_USER_ID = urlParams.get('uid');
+  let CONFIG_ACCESS_TOKEN = urlParams.get('token');
+  let CONFIG_CLIENT_ID = urlParams.get('cid');
+  
+  // 2. Fallback to localStorage (if user configured before)
+  if (!CONFIG_USER_ID) CONFIG_USER_ID = localStorage.getItem('widget_user_id');
+  if (!CONFIG_ACCESS_TOKEN) CONFIG_ACCESS_TOKEN = localStorage.getItem('widget_access_token');
+  if (!CONFIG_CLIENT_ID) CONFIG_CLIENT_ID = localStorage.getItem('widget_client_id');
+  
+  // 3. Final fallback: Hardcoded values (for developers/self-hosted)
+  if (!CONFIG_USER_ID) CONFIG_USER_ID = "YOUR_SPOTIFY_USER_ID_HERE";
+  if (!CONFIG_ACCESS_TOKEN) CONFIG_ACCESS_TOKEN = "YOUR_ACCESS_TOKEN_HERE";
+  if (!CONFIG_CLIENT_ID) CONFIG_CLIENT_ID = "YOUR_CLIENT_ID_HERE";
+  
+  // 4. Client Secret: ONLY from localStorage (NEVER from URL for security)
+  const CONFIG_CLIENT_SECRET = localStorage.getItem('widget_client_secret') || "YOUR_CLIENT_SECRET_HERE";
+  
+  // 5. Refresh URL for PHP backend (optional)
   const CONFIG_REFRESH_URL = "https://yourwebsite.com/spotify/refresh_token.php";
 
   // ==========================================
-  // --- END USER SETTINGS ---
+  // --- SPOTIFY DATA CLASS ---
   // ==========================================
-
   class SpotifyData {
-    constructor(userId, accessToken, refreshToken, refreshUrl) {
+    constructor(userId, accessToken, clientId, clientSecret, refreshUrl) {
       this.userId = userId;
       this.accessToken = accessToken;
-      this.refreshTokenValue = refreshToken;
+      this.clientId = clientId;
+      this.clientSecret = clientSecret; // Used only for backend refresh
       this.refreshUrl = refreshUrl;
       
       this.state = {
@@ -371,19 +382,21 @@
         progressMs: 0,
         durationMs: 0
       };
+      
       this.publish();
       this.checkSong();
     }
+    
     publish() {
       window.spotifyData = this.state;
       window.dispatchEvent(new CustomEvent("spotifyupdate", { detail: this.state }));
     }
+    
     setState(next) {
       this.state = Object.assign({}, this.state, next);
       this.publish();
     }
     
-    // Helper to fetch genre
     async fetchGenre(artistId) {
         if(!artistId) return "Unknown";
         try {
@@ -393,7 +406,6 @@
             if(res.ok) {
                 const data = await res.json();
                 if(data.genres && data.genres.length > 0) {
-                    // Take first genre, replace hyphens with spaces, capitalize
                     let g = data.genres[0];
                     return g.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                 }
@@ -407,20 +419,28 @@
         const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing?additional_types=episode", {
           headers: { Authorization: "Bearer " + this.accessToken }
         });
-        if (res.status === 401) { await this.refreshAccessToken(); return; }
+        
+        if (res.status === 401) { 
+            console.warn("⚠️ Access token expired. Please reconnect via Config Tool or set up PHP backend.");
+            return; 
+        }
+        
         if (res.status === 429) {
           const delay = parseInt(res.headers.get("Retry-After")) || 5;
           await this.wait(delay * 1000 + 2000);
           this.checkSong(); return;
         }
+        
         if (res.status === 204) {
           this.setState({ isPlaying: false, title: null, artist: null, albumArt: null, albumName: null, albumYear: null, genre: null, progressMs: 0, durationMs: 0 });
           await this.wait(10000); this.checkSong(); return;
         }
+        
         const json = await res.json();
         if (!json.item && !json.hasOwnProperty("is_playing")) {
           await this.wait(10000); this.checkSong(); return;
         }
+        
         if (!json.is_playing) {
           this.setState({
             isPlaying: false,
@@ -446,7 +466,6 @@
             const dateStr = json.item.album && json.item.album.release_date;
             albumYear = dateStr ? dateStr.split('-')[0] : "";
             
-            // Fetch Genre if artist changed or not set
             if(artistId && (!this.state.genre || this.state.artist !== artist)) {
                 genre = await this.fetchGenre(artistId);
             } else {
@@ -466,6 +485,7 @@
             durationMs: json.item.duration_ms || 0
           });
         }
+        
         const timeUntilEnd = (json.item && json.item.duration_ms) ? json.item.duration_ms - json.progress_ms : 5000;
         await this.wait(Math.min(timeUntilEnd + 1000, 5000));
         this.checkSong();
@@ -474,22 +494,18 @@
         await this.wait(10000); this.checkSong();
       }
     }
-    async refreshAccessToken() {
-      try {
-        const res = await fetch(this.refreshUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "user_id=" + encodeURIComponent(this.userId) + "&refresh_token=" + encodeURIComponent(this.refreshTokenValue)
-        });
-        const token = await res.text();
-        if (token) { this.accessToken = token; this.checkSong(); }
-      } catch (e) { console.error("Refresh error:", e); }
-    }
+    
     wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   }
 
-  // Initialize with the Config variables defined above
-  new SpotifyData(CONFIG_USER_ID, CONFIG_ACCESS_TOKEN, CONFIG_REFRESH_TOKEN, CONFIG_REFRESH_URL);
+  // Initialize the widget with smart config
+  new SpotifyData(
+    CONFIG_USER_ID, 
+    CONFIG_ACCESS_TOKEN, 
+    CONFIG_CLIENT_ID, 
+    CONFIG_CLIENT_SECRET, 
+    CONFIG_REFRESH_URL
+  );
 })();
 </script>
 
