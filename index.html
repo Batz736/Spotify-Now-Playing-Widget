@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spotify Now Playing Widget</title>
+<style>
+    /* --- FONTS --- */
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+
+    :root {
+        --bg-color: #050505;
+        --text-main: #e0e0e0;
+        --accent-primary: #ffffff; /* Dynamic */
+        --accent-secondary: #333333; /* Dynamic */
+        --glitch-color-1: #ff003c;
+        --glitch-color-2: #00f0ff;
+        --font-header: 'Bebas Neue', sans-serif;
+        --font-mono: 'Share Tech Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        background-color: transparent; /* Transparent for OBS */
+        font-family: var(--font-mono);
+        color: var(--text-main);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* --- WIDGET CONTAINER --- */
+    #widget-card {
+        position: relative;
+        width: 380px;
+        background: var(--bg-color);
+        border: 2px solid var(--accent-primary);
+        box-shadow: 0 0 15px rgba(0,0,0,0.8);
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        opacity: 0; /* Hidden initially until data loads */
+        transform: translateY(20px);
+        animation: slideIn 0.5s forwards;
+    }
+
+    /* --- ALBUM ART & GLITCH --- */
+    .art-container {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1/1;
+        border: 1px solid var(--accent-secondary);
+        overflow: hidden;
+    }
+
+    #album-art {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: grayscale(20%) contrast(110%);
+        transition: filter 0.3s;
+    }
+
+    /* Glitch Overlay Effect */
+    .glitch-layer {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-size: cover;
+        mix-blend-mode: hard-light;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .is-glitching .glitch-layer {
+        animation: glitch-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+        opacity: 0.7;
+    }
+
+    /* --- TEXT INFO --- */
+    .info-block {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-bottom: 1px solid var(--accent-secondary);
+        padding-bottom: 10px;
+    }
+
+    .label {
+        font-size: 0.7rem;
+        color: var(--accent-primary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.7;
+        margin-bottom: -2px;
+    }
+
+    /* Marquee Wrapper */
+    .marquee-wrapper {
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
+        width: 100%;
+    }
+
+    .marquee-content {
+        display: inline-block;
+        font-family: var(--font-header);
+        font-size: 1.8rem;
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--text-main);
+        /* Default state: Static Left Aligned */
+        transform: translateX(0);
+        animation: none;
+    }
+
+    /* Active Scroll State - Only applied via JS class 'is-scrolling' */
+    .marquee-wrapper.is-scrolling .marquee-content {
+        padding-left: 100%;
+        animation: marquee-scroll 12s linear infinite;
+    }
+
+    /* Artist Name - Static, Ellipsis if too long */
+    #artist-name {
+        font-family: var(--font-header);
+        font-size: 1.2rem;
+        color: var(--accent-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        display: block;
+        text-transform: uppercase;
+    }
+
+    /* Album Info - Static, Ellipsis if too long */
+    #album-info {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        font-style: italic;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        display: block;
+    }
+
+    /* Genre Info - Static */
+    #genre-info {
+        font-size: 0.8rem;
+        color: var(--accent-primary);
+        opacity: 0.9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* --- PROGRESS BAR --- */
+    .progress-container {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .time-display {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--accent-primary);
+    }
+
+    .bar-bg {
+        width: 100%;
+        height: 6px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        position: relative;
+    }
+
+    .bar-fill {
+        height: 100%;
+        width: 0%;
+        background-color: var(--accent-primary);
+        box-shadow: 0 0 8px var(--accent-primary);
+        transition: width 0.1s linear, background-color 0.5s;
+    }
+
+    /* --- FOOTER (Clock & Badge) --- */
+    .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 5px;
+        font-size: 0.75rem;
+        border-top: 1px dashed var(--accent-secondary);
+        padding-top: 8px;
+    }
+
+    #cdt-clock {
+        color: var(--text-main);
+        font-feature-settings: "tnum";
+        font-variant-numeric: tabular-nums;
+    }
+
+    .status-badge {
+        background: var(--accent-primary);
+        color: var(--bg-color);
+        padding: 2px 6px;
+        font-weight: bold;
+        text-transform: uppercase;
+        display: none; /* Hidden by default */
+    }
+
+    .status-badge.visible {
+        display: block;
+        animation: blink 1s step-end infinite;
+    }
+
+    /* --- PAUSED OVERLAY --- */
+    #paused-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: grayscale(100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    #paused-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .paused-stamp {
+        font-family: var(--font-header);
+        font-size: 4rem;
+        color: var(--glitch-color-1);
+        border: 4px solid var(--glitch-color-1);
+        padding: 10px 20px;
+        transform: rotate(-15deg);
+        background: rgba(0,0,0,0.8);
+        text-shadow: 2px 2px 0px #fff;
+    }
+
+    /* --- ANIMATIONS --- */
+    @keyframes slideIn {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes marquee-scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-100%); }
+    }
+
+    @keyframes blink {
+        50% { opacity: 0; }
+    }
+
+    @keyframes glitch-anim {
+        0% { clip-path: inset(10% 0 80% 0); transform: translate(-2px, 2px); }
+        20% { clip-path: inset(80% 0 10% 0); transform: translate(2px, -2px); }
+        40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
+        60% { clip-path: inset(20% 0 60% 0); transform: translate(2px, -2px); }
+        80% { clip-path: inset(60% 0 20% 0); transform: translate(-1px, 1px); }
+        100% { clip-path: inset(10% 0 80% 0); transform: translate(1px, -1px); }
+    }
+
+</style>
+</head>
+<body>
+
+<div id="widget-card">
+    <!-- Paused Overlay -->
+    <div id="paused-overlay">
+        <div class="paused-stamp">PAUSED</div>
+    </div>
+
+    <!-- Album Art -->
+    <div class="art-container" id="art-container">
+        <img id="album-art" src="" alt="Album Art">
+        <div class="glitch-layer" id="glitch-layer-1"></div>
+        <div class="glitch-layer" id="glitch-layer-2"></div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-block">
+        <div class="label">Track // Title</div>
+        <div class="marquee-wrapper" id="title-wrapper">
+            <div class="marquee-content" id="track-title">WAITING FOR SIGNAL...</div>
+        </div>
+        
+        <div class="label" style="margin-top:8px;">Artist // Origin</div>
+        <div id="artist-name">---</div>
+
+        <div class="label" style="margin-top:8px;">Album // Year</div>
+        <div id="album-info">---</div>
+
+        <div class="label" style="margin-top:8px;">Genre // Vibe</div>
+        <div id="genre-info">---</div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-container">
+        <div class="time-display">
+            <span id="elapsed-time">0:00</span>
+            <span id="total-time">0:00</span>
+        </div>
+        <div class="bar-bg">
+            <div class="bar-fill" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div id="cdt-clock">00:00:00 CDT</div>
+        <div class="status-badge" id="now-playing-badge">NOW PLAYING</div>
+    </div>
+</div>
+
+<!-- DATA LAYER SCRIPT -->
+<script>
+(function() {
+  // ==========================================
+  // --- USER SETTINGS (EDIT THIS PART) ---
+  // ==========================================
+  
+  // 1. Your Spotify User ID
+  const CONFIG_USER_ID = "YOUR_SPOTIFY_USER_ID_HERE";
+
+  // 2. Your Access Token (Short lived, usually starts with BQC...)
+  const CONFIG_ACCESS_TOKEN = "YOUR_ACCESS_TOKEN_HERE";
+
+  // 3. Your Refresh Token (Long lived, usually starts with AQC...)
+  const CONFIG_REFRESH_TOKEN = "YOUR_REFRESH_TOKEN_HERE";
+
+  // 4. The URL to your PHP refresh script
+  const CONFIG_REFRESH_URL = "https://yourwebsite.com/spotify/refresh_token.php";
+
+  // ==========================================
+  // --- END USER SETTINGS ---
+  // ==========================================
+
+  class SpotifyData {
+    constructor(userId, accessToken, refreshToken, refreshUrl) {
+      this.userId = userId;
+      this.accessToken = accessToken;
+      this.refreshTokenValue = refreshToken;
+      this.refreshUrl = refreshUrl;
+      
+      this.state = {
+        isPlaying: false,
+        title: null,
+        artist: null,
+        albumArt: null,
+        albumName: null, 
+        albumYear: null, 
+        genre: null,
+        progressMs: 0,
+        durationMs: 0
+      };
+      this.publish();
+      this.checkSong();
+    }
+    publish() {
+      window.spotifyData = this.state;
+      window.dispatchEvent(new CustomEvent("spotifyupdate", { detail: this.state }));
+    }
+    setState(next) {
+      this.state = Object.assign({}, this.state, next);
+      this.publish();
+    }
+    
+    // Helper to fetch genre
+    async fetchGenre(artistId) {
+        if(!artistId) return "Unknown";
+        try {
+            const res = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+                headers: { Authorization: "Bearer " + this.accessToken }
+            });
+            if(res.ok) {
+                const data = await res.json();
+                if(data.genres && data.genres.length > 0) {
+                    // Take first genre, replace hyphens with spaces, capitalize
+                    let g = data.genres[0];
+                    return g.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                }
+            }
+        } catch(e) { console.error("Genre fetch error", e); }
+        return "Unknown";
+    }
+
+    async checkSong() {
+      try {
+        const res = await fetch("https://api.spotify.com/v1/me/player/currently-playing?additional_types=episode", {
+          headers: { Authorization: "Bearer " + this.accessToken }
+        });
+        if (res.status === 401) { await this.refreshAccessToken(); return; }
+        if (res.status === 429) {
+          const delay = parseInt(res.headers.get("Retry-After")) || 5;
+          await this.wait(delay * 1000 + 2000);
+          this.checkSong(); return;
+        }
+        if (res.status === 204) {
+          this.setState({ isPlaying: false, title: null, artist: null, albumArt: null, albumName: null, albumYear: null, genre: null, progressMs: 0, durationMs: 0 });
+          await this.wait(10000); this.checkSong(); return;
+        }
+        const json = await res.json();
+        if (!json.item && !json.hasOwnProperty("is_playing")) {
+          await this.wait(10000); this.checkSong(); return;
+        }
+        if (!json.is_playing) {
+          this.setState({
+            isPlaying: false,
+            progressMs: json.progress_ms || 0,
+            durationMs: (json.item && json.item.duration_ms) || 0
+          });
+        } else {
+          let title, artist, albumArt, albumName, albumYear, genre, artistId;
+          
+          if (json.currently_playing_type === "episode") {
+            title = json.item.name;
+            artist = json.item.show && json.item.show.name;
+            albumArt = json.item.show && json.item.show.images && json.item.show.images[0] && json.item.show.images[0].url;
+            albumName = "Podcast";
+            albumYear = "";
+            genre = "Speech";
+          } else {
+            title = json.item.name;
+            artist = json.item.artists && json.item.artists[0] && json.item.artists[0].name;
+            artistId = json.item.artists && json.item.artists[0] && json.item.artists[0].id;
+            albumArt = json.item.album && json.item.album.images && json.item.album.images[0] && json.item.album.images[0].url;
+            albumName = json.item.album && json.item.album.name;
+            const dateStr = json.item.album && json.item.album.release_date;
+            albumYear = dateStr ? dateStr.split('-')[0] : "";
+            
+            // Fetch Genre if artist changed or not set
+            if(artistId && (!this.state.genre || this.state.artist !== artist)) {
+                genre = await this.fetchGenre(artistId);
+            } else {
+                genre = this.state.genre;
+            }
+          }
+          
+          this.setState({
+            isPlaying: true,
+            title: title || null,
+            artist: artist || null,
+            albumArt: albumArt || null,
+            albumName: albumName || null,
+            albumYear: albumYear || null,
+            genre: genre || "Unknown",
+            progressMs: json.progress_ms || 0,
+            durationMs: json.item.duration_ms || 0
+          });
+        }
+        const timeUntilEnd = (json.item && json.item.duration_ms) ? json.item.duration_ms - json.progress_ms : 5000;
+        await this.wait(Math.min(timeUntilEnd + 1000, 5000));
+        this.checkSong();
+      } catch (e) {
+        console.error("Spotify poll error:", e);
+        await this.wait(10000); this.checkSong();
+      }
+    }
+    async refreshAccessToken() {
+      try {
+        const res = await fetch(this.refreshUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "user_id=" + encodeURIComponent(this.userId) + "&refresh_token=" + encodeURIComponent(this.refreshTokenValue)
+        });
+        const token = await res.text();
+        if (token) { this.accessToken = token; this.checkSong(); }
+      } catch (e) { console.error("Refresh error:", e); }
+    }
+    wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+  }
+
+  // Initialize with the Config variables defined above
+  new SpotifyData(CONFIG_USER_ID, CONFIG_ACCESS_TOKEN, CONFIG_REFRESH_TOKEN, CONFIG_REFRESH_URL);
+})();
+</script>
+
+<!-- UI LOGIC -->
+<script>
+    // --- CONFIG & STATE ---
+    const els = {
+        card: document.getElementById('widget-card'),
+        art: document.getElementById('album-art'),
+        glitch1: document.getElementById('glitch-layer-1'),
+        glitch2: document.getElementById('glitch-layer-2'),
+        artContainer: document.getElementById('art-container'),
+        title: document.getElementById('track-title'),
+        artist: document.getElementById('artist-name'),
+        album: document.getElementById('album-info'),
+        genre: document.getElementById('genre-info'),
+        elapsed: document.getElementById('elapsed-time'),
+        total: document.getElementById('total-time'),
+        bar: document.getElementById('progress-bar'),
+        clock: document.getElementById('cdt-clock'),
+        badge: document.getElementById('now-playing-badge'),
+        pausedOverlay: document.getElementById('paused-overlay'),
+        titleWrapper: document.getElementById('title-wrapper')
+    };
+
+    let localProgressMs = 0;
+    let lastDurationMs = 0;
+    let isPlaying = false;
+    let updateInterval = null;
+
+    // --- UTILS ---
+    function formatTime(ms) {
+        if (!ms || ms < 0) ms = 0;
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateClock() {
+        const now = new Date();
+        // 12-hour format, CDT (America/Chicago)
+        const timeString = now.toLocaleTimeString('en-US', { 
+            timeZone: 'America/Chicago', 
+            hour12: true, 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+        });
+        els.clock.textContent = `${timeString} CDT`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // --- COLOR EXTRACTION ---
+    function extractColor(imageUrl, callback) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = imageUrl;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 50; 
+            canvas.height = 50;
+            ctx.drawImage(img, 0, 0, 50, 50);
+            
+            const data = ctx.getImageData(0, 0, 50, 50).data;
+            let r=0, g=0, b=0, count=0;
+
+            for(let i=0; i<data.length; i+=4) {
+                if(data[i] + data[i+1] + data[i+2] > 50) {
+                    r += data[i];
+                    g += data[i+1];
+                    b += data[i+2];
+                    count++;
+                }
+            }
+            
+            if(count === 0) { r=255; g=255; b=255; count=1; }
+
+            r = Math.floor(r/count);
+            g = Math.floor(g/count);
+            b = Math.floor(b/count);
+
+            const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            
+            const dr = Math.floor(r * 0.3);
+            const dg = Math.floor(g * 0.3);
+            const db = Math.floor(b * 0.3);
+            const secHex = "#" + ((1 << 24) + (dr << 16) + (dg << 8) + db).toString(16).slice(1);
+
+            callback(hex, secHex);
+        };
+        img.onerror = () => callback('#ffffff', '#333333');
+    }
+
+    function applyTheme(primary, secondary) {
+        document.documentElement.style.setProperty('--accent-primary', primary);
+        document.documentElement.style.setProperty('--accent-secondary', secondary);
+    }
+
+    // --- SMART MARQUEE CHECK ---
+    function checkMarquee(element, wrapper) {
+        // If content is wider than wrapper, enable scrolling
+        if (element.scrollWidth > wrapper.clientWidth) {
+            wrapper.classList.add('is-scrolling');
+        } else {
+            wrapper.classList.remove('is-scrolling');
+        }
+    }
+
+    // --- RENDER ---
+    function render(data) {
+        els.card.style.opacity = 1;
+
+        const isNewTrack = (data.title !== els.title.innerText);
+        
+        if (!data.isPlaying) {
+            els.pausedOverlay.classList.add('active');
+            els.badge.classList.remove('visible');
+            if(updateInterval) clearInterval(updateInterval);
+        } else {
+            els.pausedOverlay.classList.remove('active');
+            els.badge.classList.add('visible');
+            if(!updateInterval) startProgressLoop();
+        }
+
+        if (isNewTrack) {
+            els.title.innerText = data.title || "UNKNOWN";
+            els.artist.innerText = data.artist || "UNKNOWN";
+            els.genre.innerText = data.genre || "UNKNOWN";
+            
+            let albumDisplay = "";
+            if(data.albumName) {
+                albumDisplay = data.albumName;
+                if(data.albumYear) albumDisplay += ` (${data.albumYear})`;
+            } else {
+                albumDisplay = "---";
+            }
+            els.album.innerText = albumDisplay;
+
+            els.artContainer.classList.add('is-glitching');
+            setTimeout(() => els.artContainer.classList.remove('is-glitching'), 500);
+
+            if (data.albumArt) {
+                els.art.src = data.albumArt;
+                els.glitch1.style.backgroundImage = `url(${data.albumArt})`;
+                els.glitch2.style.backgroundImage = `url(${data.albumArt})`;
+                
+                extractColor(data.albumArt, (p, s) => {
+                    applyTheme(p, s);
+                });
+            }
+
+            localProgressMs = data.progressMs;
+            lastDurationMs = data.durationMs;
+            els.total.innerText = formatTime(data.durationMs);
+        } else {
+            // Update genre even if not "new" track in case it loaded late
+            if(data.genre && els.genre.innerText === "UNKNOWN") {
+                 els.genre.innerText = data.genre;
+            }
+        }
+
+        // Check Marquee for Title ONLY
+        checkMarquee(els.title, els.titleWrapper);
+    }
+
+    function startProgressLoop() {
+        if(updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(() => {
+            if(isPlaying && localProgressMs < lastDurationMs) {
+                localProgressMs += 100; 
+                updateProgressBar();
+            }
+        }, 100);
+    }
+
+    function updateProgressBar() {
+        const pct = Math.min((localProgressMs / lastDurationMs) * 100, 100);
+        els.bar.style.width = `${pct}%`;
+        els.elapsed.innerText = formatTime(localProgressMs);
+    }
+
+    window.addEventListener("spotifyupdate", (e) => {
+        const data = e.detail;
+        isPlaying = data.isPlaying;
+        
+        if(data.isPlaying) {
+            localProgressMs = data.progressMs;
+            lastDurationMs = data.durationMs;
+            updateProgressBar();
+        }
+        
+        render(data);
+    });
+
+    if(window.spotifyData) {
+        const data = window.spotifyData;
+        isPlaying = data.isPlaying;
+        localProgressMs = data.progressMs;
+        lastDurationMs = data.durationMs;
+        render(data);
+        if(isPlaying) startProgressLoop();
+    }
+
+</script>
+</body>
+</html>
