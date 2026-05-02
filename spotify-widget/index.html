@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure Spotify Widget</title>
+    
+    <!-- ✅ REDIRECT SCRIPT: Forces clean URLs (removes /index.html) -->
+    <script>
+        if (window.location.pathname.includes('/index.html')) {
+            const cleanURL = window.location.pathname.replace('/index.html', '/');
+            window.location.replace(cleanURL);
+        }
+    </script>
+    
+    <style>
+        :root { --bg: #121212; --card: #181818; --text: #fff; --green: #1DB954; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: var(--card); padding: 40px; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: var(--green); margin-top: 0; }
+        p { color: #b3b3b3; line-height: 1.6; }
+        .step { margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #282828; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #fff; }
+        input { width: 100%; padding: 12px; background: #282828; border: 1px solid #3e3e3e; border-radius: 4px; color: #fff; box-sizing: border-box; }
+        button { background: var(--green); color: #000; border: none; padding: 12px 24px; border-radius: 20px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; transition: transform 0.1s; }
+        button:hover { transform: scale(1.02); background: #1ed760; }
+        .result { display: none; background: #000; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #333; }
+        .code-block { background: #111; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all; margin-bottom: 10px; color: #1ed760; }
+        .copy-btn { background: #333; color: #fff; padding: 5px 10px; font-size: 12px; width: auto; display: inline-block; margin-top: 5px; }
+        .warning { background: #3e2723; border-left: 4px solid #ff5252; padding: 15px; margin-bottom: 20px; color: #ff8a80; }
+        a { color: var(--green); }
+        code { background: #282828; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎵 Widget Configurator</h1>
+    
+    <div id="login-step">
+        <div class="warning">
+            ⚠️ <strong>Security:</strong> This tool runs entirely in your browser. Your tokens are never sent to any server other than Spotify.
+        </div>
+
+        <div class="step">
+            <label>1. Enter your Spotify Client ID</label>
+            <input type="text" id="clientId" placeholder="Paste Client ID from Spotify Dashboard">
+            <p style="font-size: 12px; margin-top: 5px;">
+                Don't have one? <a href="https://developer.spotify.com/dashboard" target="_blank">Create an App here</a>. 
+                <br><em>(Set Redirect URI to: <code>https://batz736.github.io/Spotify-Now-Playing-Widget/configure/</code>)</em>
+            </p>
+        </div>
+
+        <button onclick="login()">Connect Spotify & Get Tokens</button>
+    </div>
+
+    <div id="result-step" class="result">
+        <h3>✅ Success! Copy these into index.html:</h3>
+        
+        <label>CONFIG_USER_ID</label>
+        <div class="code-block" id="displayUserId"></div>
+        <button class="copy-btn" onclick="copy('displayUserId')">Copy</button>
+
+        <label>CONFIG_ACCESS_TOKEN</label>
+        <div class="code-block" id="displayToken"></div>
+        <button class="copy-btn" onclick="copy('displayToken')">Copy</button>
+
+        <p style="margin-top: 20px; font-size: 14px;">
+            <strong>Note:</strong> This access token expires in 1 hour. For auto-refresh, set up the PHP script in the README.
+        </p>
+        <button onclick="location.reload()" style="background: #333; color: #fff; margin-top: 10px;">Start Over</button>
+    </div>
+</div>
+
+<script>
+    // Handle redirect from Spotify with token in URL hash
+    window.onload = function() {
+        const hash = window.location.hash;
+        if (hash && hash.includes('access_token')) {
+            const params = new URLSearchParams(hash.substring(1));
+            const accessToken = params.get('access_token');
+            
+            if (accessToken) {
+                document.getElementById('login-step').style.display = 'none';
+                document.getElementById('result-step').style.display = 'block';
+                document.getElementById('displayToken').innerText = accessToken;
+                
+                // Fetch User ID from Spotify API
+                fetch('https://api.spotify.com/v1/me', {
+                    headers: { 'Authorization': 'Bearer ' + accessToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('displayUserId').innerText = data.id;
+                })
+                .catch(err => {
+                    document.getElementById('displayUserId').innerText = "Error fetching ID";
+                    console.error(err);
+                });
+            }
+        }
+    };
+
+    function login() {
+        const clientId = document.getElementById('clientId').value.trim();
+        if (!clientId) {
+            alert("Please enter your Client ID");
+            return;
+        }
+
+        // ⚠️ IMPORTANT: This MUST match exactly what you set in Spotify Dashboard
+        const redirectUri = "https://batz736.github.io/Spotify-Now-Playing-Widget/configure/";
+        const scopes = "user-read-playback-state user-read-currently-playing user-modify-playback-state";
+        
+        const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+        
+        window.location.href = authUrl;
+    }
+
+    function copy(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Copied to clipboard!");
+        }).catch(err => {
+            console.error('Copy failed:', err);
+        });
+    }
+</script>
+
+</body>
+</html>
