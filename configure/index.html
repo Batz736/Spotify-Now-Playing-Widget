@@ -1,246 +1,470 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spotify Widget Setup</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Widget Configurator</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #181818;
+            --spotify-green: #1DB954;
+            --spotify-green-hover: #1ed760;
+            --text: #ffffff;
+            --subtext: #b3b3b3;
+            --border: #282828;
+            --warning: #ff6b6b;
+        }
 
-<!-- Clean URL redirect -->
-<script>
-if (window.location.pathname.includes('/index.html')) {
-    const cleanURL = window.location.pathname.replace('/index.html', '/');
-    window.location.replace(cleanURL);
-}
-</script>
+        body {
+            margin: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-<style>
-:root {
-    --bg: #0d0d0d;
-    --card: #161616;
-    --accent: #1DB954;
-    --text: #ffffff;
-    --subtext: #a7a7a7;
-}
+        .container {
+            width: 100%;
+            max-width: 520px;
+            background-color: var(--card);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
 
-body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(180deg, #0d0d0d, #000);
-    color: var(--text);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-}
+        h1 { margin-bottom: 10px; font-size: 24px; }
+        p { color: var(--subtext); font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
 
-.container {
-    width: 100%;
-    max-width: 600px;
-    background: var(--card);
-    border-radius: 16px;
-    padding: 40px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-}
+        .input-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
 
-h1 {
-    margin: 0 0 10px;
-    font-size: 28px;
-    color: var(--accent);
-}
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--subtext);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
-.subtitle {
-    color: var(--subtext);
-    margin-bottom: 30px;
-    font-size: 14px;
-}
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border 0.2s;
+        }
 
-.step {
-    margin-bottom: 25px;
-}
+        input:focus { border-color: var(--spotify-green); }
+        input[type="password"] { font-family: monospace; }
 
-label {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 8px;
-}
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 14px;
+            background-color: var(--spotify-green);
+            color: black;
+            font-weight: bold;
+            border-radius: 500px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+            transition: transform 0.1s, background 0.2s;
+            margin-bottom: 12px;
+        }
 
-input {
-    width: 100%;
-    padding: 12px;
-    border-radius: 6px;
-    border: 1px solid #2a2a2a;
-    background: #0f0f0f;
-    color: white;
-    font-size: 14px;
-}
+        .btn:hover { transform: scale(1.02); background-color: var(--spotify-green-hover); }
+        .btn:active { transform: scale(0.98); }
 
-.helper {
-    font-size: 12px;
-    color: var(--subtext);
-    margin-top: 6px;
-}
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
 
-button {
-    width: 100%;
-    padding: 14px;
-    border-radius: 999px;
-    border: none;
-    background: var(--accent);
-    color: black;
-    font-weight: bold;
-    font-size: 15px;
-    cursor: pointer;
-    transition: 0.2s;
-}
+        .btn-secondary:hover {
+            background-color: #282828;
+            border-color: var(--subtext);
+        }
 
-button:hover {
-    background: #1ed760;
-    transform: scale(1.02);
-}
+        .hidden { display: none; }
 
-.warning {
-    background: #2a1515;
-    border-left: 4px solid #ff4d4d;
-    padding: 15px;
-    border-radius: 6px;
-    font-size: 13px;
-    margin-bottom: 25px;
-}
+        .warning-box {
+            background: #2a1515;
+            border-left: 4px solid var(--warning);
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            text-align: left;
+            margin-bottom: 20px;
+            color: #ffb3b3;
+        }
 
-.result {
-    display: none;
-    margin-top: 25px;
-    padding: 20px;
-    background: #000;
-    border-radius: 10px;
-    border: 1px solid #222;
-}
+        .step-number {
+            display: inline-block;
+            background: #333;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        
+        .helper-link { color: var(--spotify-green); text-decoration: none; }
+        .helper-link:hover { text-decoration: underline; }
 
-.code {
-    background: #0d0d0d;
-    padding: 10px;
-    border-radius: 6px;
-    font-family: monospace;
-    word-break: break-all;
-    color: var(--accent);
-    margin-bottom: 10px;
-}
+        .toggle-secret {
+            background: none;
+            border: none;
+            color: var(--spotify-green);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+            margin-left: 8px;
+        }
+        .toggle-secret:hover { text-decoration: underline; }
 
-.copy-btn {
-    width: auto;
-    padding: 6px 12px;
-    background: #333;
-    color: white;
-    font-size: 12px;
-    border-radius: 6px;
-    margin-bottom: 15px;
-}
+        /* Success Screen Styles */
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--spotify-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
 
-a { color: var(--accent); }
-code {
-    background: #1a1a1a;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-</style>
+        .success-title {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .success-message {
+            color: var(--subtext);
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .url-display {
+            background: #000;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--spotify-green);
+            word-break: break-all;
+            text-align: left;
+            margin-bottom: 15px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .copy-feedback {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--spotify-green);
+            color: black;
+            padding: 12px 24px;
+            border-radius: 500px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .copy-feedback.show {
+            opacity: 1;
+        }
+
+        .advanced-toggle {
+            background: none;
+            border: none;
+            color: var(--subtext);
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 15px;
+            text-decoration: underline;
+        }
+
+        .advanced-toggle:hover {
+            color: var(--text);
+        }
+
+        .advanced-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .cred-box {
+            background: #000;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--text);
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+
+        .cred-label {
+            font-size: 11px;
+            color: var(--subtext);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .small-copy-btn {
+            background: #282828;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .small-copy-btn:hover {
+            background: #333;
+        }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
-
-    <h1>🎵 Spotify Widget Setup</h1>
-    <div class="subtitle">
-        Connect your Spotify account to power your Now Playing widget.
-    </div>
-
-    <div id="login-step">
-
-        <div class="warning">
-            ⚠️ Your data stays local. This runs entirely in your browser and only talks to Spotify.
+    
+    <!-- STEP 1: INPUT CREDENTIALS -->
+    <div id="step-1">
+        <h1>🎵 Spotify Widget Setup</h1>
+        <p>Connect your Spotify account to power your Now Playing widget.</p>
+        
+        <div class="warning-box">
+            🔐 <strong>Security Note:</strong> Your Client Secret is stored only in your browser's local storage. It is <em>never</em> sent to us or included in your widget URL.
         </div>
 
-        <div class="step">
-            <label>Client ID</label>
-            <input type="text" id="clientId" placeholder="Paste your Spotify Client ID">
-
-            <div class="helper">
-                Don’t have one?  
-                <a href="https://developer.spotify.com/dashboard" target="_blank">Create a Spotify App</a><br>
-                Set Redirect URI to:<br>
-                <code>https://batz736.github.io/Spotify-Now-Playing-Widget/configure/</code>
-            </div>
+        <div class="input-group">
+            <label><span class="step-number">1</span> Client ID</label>
+            <input type="text" id="clientIdInput" placeholder="Paste your Client ID here...">
         </div>
 
-        <button onclick="login()">Connect Spotify</button>
+        <div class="input-group">
+            <label><span class="step-number">2</span> Client Secret 
+                <button type="button" class="toggle-secret" onclick="toggleSecret()">Show/Hide</button>
+            </label>
+            <input type="password" id="clientSecretInput" placeholder="Paste your Client Secret here...">
+            <p style="font-size: 11px; margin-top: 5px; color: var(--subtext);">
+                Required for token refresh (permanent setup). <a href="https://developer.spotify.com/dashboard" target="_blank" class="helper-link">Get credentials here</a>.
+            </p>
+        </div>
+
+        <div class="input-group">
+            <label><span class="step-number">3</span> Redirect URI</label>
+            <input type="text" id="redirectUriInput" value="https://batz736.github.io/Spotify-Now-Playing-Widget/configure/" readonly>
+            <p style="font-size: 11px; margin-top: 5px; color: var(--subtext);">
+                ⚠️ This exact URI must be added to your Spotify App settings!
+            </p>
+        </div>
+
+        <button class="btn" onclick="startAuth()">Connect Spotify</button>
     </div>
 
-    <div id="result-step" class="result">
-        <h3>✅ You're connected</h3>
-        <p class="subtitle">Copy these into your widget config:</p>
-
-        <label>User ID</label>
-        <div class="code" id="displayUserId"></div>
-        <button class="copy-btn" onclick="copy('displayUserId')">Copy</button>
-
-        <label>Access Token</label>
-        <div class="code" id="displayToken"></div>
-        <button class="copy-btn" onclick="copy('displayToken')">Copy</button>
-
-        <p class="helper">
-            Token expires in ~1 hour. Use the auto-refresh method in the README for permanent setup.
+    <!-- STEP 2: SUCCESS SCREEN -->
+    <div id="step-2" class="hidden">
+        <div class="success-icon">✓</div>
+        <h2 class="success-title">Authorization Complete</h2>
+        <p class="success-message">
+            Your widget is ready! Copy the link below and paste it into OBS as a <strong>Browser Source</strong>.
         </p>
 
-        <button onclick="location.reload()" style="background:#222;color:white;margin-top:10px;">
+        <button class="btn" onclick="copyWidgetUrl()">
+            📋 Copy Link
+        </button>
+
+        <button class="btn btn-secondary" onclick="showAdvanced()">
+            🔧 Show Manual Credentials
+        </button>
+
+        <div id="advanced-section" class="advanced-section hidden">
+            <p style="font-size: 12px; margin-bottom: 15px;">
+                For self-hosted setups with PHP backend, use these credentials:
+            </p>
+
+            <div class="cred-label">Widget URL</div>
+            <div class="cred-box" id="displayUrl"></div>
+            <button class="small-copy-btn" onclick="copyToClipboard('displayUrl')">Copy URL</button>
+
+            <div class="cred-label">User ID</div>
+            <div class="cred-box" id="displayUserId"></div>
+            <button class="small-copy-btn" onclick="copyToClipboard('displayUserId')">Copy</button>
+
+            <div class="cred-label">Access Token</div>
+            <div class="cred-box" id="displayToken"></div>
+            <button class="small-copy-btn" onclick="copyToClipboard('displayToken')">Copy</button>
+
+            <div class="cred-label">Client Secret (Store Securely!)</div>
+            <div class="cred-box" id="displaySecret" style="color: var(--warning);"></div>
+            <button class="small-copy-btn" onclick="copyToClipboard('displaySecret')">Copy</button>
+        </div>
+
+        <button class="btn btn-secondary" style="margin-top: 20px;" onclick="location.reload()">
             Start Over
         </button>
     </div>
 
 </div>
 
+<!-- Copy Feedback Toast -->
+<div id="copyFeedback" class="copy-feedback">✓ Copied to clipboard!</div>
+
 <script>
-window.onload = function() {
-    const hash = window.location.hash;
-    if (hash.includes('access_token')) {
-        const params = new URLSearchParams(hash.substring(1));
+    // CONFIGURATION
+    const WIDGET_BASE_URL = "https://batz736.github.io/Spotify-Now-Playing-Widget"; 
+
+    window.onload = function() {
+        const hash = window.location.hash;
+        if (hash && hash.includes('access_token')) {
+            handleAuthCallback();
+        }
+    };
+
+    function toggleSecret() {
+        const input = document.getElementById('clientSecretInput');
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function startAuth() {
+        const clientId = document.getElementById('clientIdInput').value.trim();
+        const clientSecret = document.getElementById('clientSecretInput').value.trim();
+        const redirectUri = document.getElementById('redirectUriInput').value.trim();
+
+        if (!clientId || !clientSecret) {
+            alert("Please enter both Client ID and Client Secret!");
+            return;
+        }
+
+        // Store credentials locally for later use (NOT in URL)
+        localStorage.setItem('widget_client_id', clientId);
+        localStorage.setItem('widget_client_secret', clientSecret);
+        localStorage.setItem('widget_redirect_uri', redirectUri);
+
+        const scopes = "user-read-currently-playing user-read-playback-state user-read-private";
+        const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+
+        window.location.href = authUrl;
+    }
+
+    function handleAuthCallback() {
+        document.getElementById('step-1').classList.add('hidden');
+        document.getElementById('step-2').classList.remove('hidden');
+
+        const params = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = params.get('access_token');
+        const clientId = localStorage.getItem('widget_client_id');
+        const clientSecret = localStorage.getItem('widget_client_secret');
 
-        if (accessToken) {
-            document.getElementById('login-step').style.display = 'none';
-            document.getElementById('result-step').style.display = 'block';
+        if (!accessToken || !clientId) {
+            alert("Error getting tokens. Please try again.");
+            return;
+        }
+
+        // Fetch User ID
+        fetch('https://api.spotify.com/v1/me', {
+            headers: { 'Authorization': 'Bearer ' + accessToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            const userId = data.id;
+            
+            // Generate Widget URL (DOES NOT include client_secret for security)
+            const widgetUrl = `${WIDGET_BASE_URL}?uid=${userId}&token=${accessToken}&cid=${clientId}`;
+            
+            // Store for easy access
+            localStorage.setItem('widget_user_id', userId);
+            localStorage.setItem('widget_access_token', accessToken);
+            localStorage.setItem('widget_url', widgetUrl);
+            
+            // Display values
+            document.getElementById('displayUrl').innerText = widgetUrl;
+            document.getElementById('displayUserId').innerText = userId;
             document.getElementById('displayToken').innerText = accessToken;
+            document.getElementById('displaySecret').innerText = clientSecret;
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Could not fetch User ID. Check your credentials.");
+        });
+    }
 
-            fetch('https://api.spotify.com/v1/me', {
-                headers: { Authorization: 'Bearer ' + accessToken }
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('displayUserId').innerText = data.id;
-            })
-            .catch(() => {
-                document.getElementById('displayUserId').innerText = "Error fetching ID";
+    function copyWidgetUrl() {
+        const url = localStorage.getItem('widget_url');
+        if (url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showCopyFeedback();
+            }).catch(() => {
+                // Fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopyFeedback();
             });
         }
     }
-};
 
-function login() {
-    const clientId = document.getElementById('clientId').value.trim();
-    if (!clientId) return alert("Enter your Client ID");
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            showCopyFeedback();
+        }).catch(() => {
+            alert("Failed to copy. Please select and copy manually.");
+        });
+    }
 
-    const redirectUri = "https://batz736.github.io/Spotify-Now-Playing-Widget/configure/";
-    const scopes = "user-read-playback-state user-read-currently-playing";
+    function showCopyFeedback() {
+        const feedback = document.getElementById('copyFeedback');
+        feedback.classList.add('show');
+        setTimeout(() => {
+            feedback.classList.remove('show');
+        }, 2000);
+    }
 
-    const url = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
-
-    window.location.href = url;
-}
-
-function copy(id) {
-    navigator.clipboard.writeText(document.getElementById(id).innerText);
-    alert("Copied!");
-}
+    function showAdvanced() {
+        const section = document.getElementById('advanced-section');
+        section.classList.toggle('hidden');
+    }
 </script>
 
 </body>
