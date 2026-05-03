@@ -42,13 +42,14 @@ Follow these 3 simple steps to get your widget running in under 5 minutes.
 1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
 2. Log in with your Spotify account.
 3. Click **"Create App"**.
-   - **App Name:** `My Stream Widget` (or anything you want).
+   - **App Name:** `Batista736's Spotify Widget` .
    - **App Description:** `Widget for my stream`.
    - **Redirect URI:** This is important! Paste exactly this:
      ```text
      https://batz736.github.io/Spotify-Now-Playing-Widget/configure/
      ```
-   - Check the box for "Non-commercial".
+**Which API/SDKs are you planning to use?** Check Web API 
+     
 4. Click **Save**.
 5. On the next screen, click **"Settings"** (top right).
 6. Find **Client ID** and click **"View Client Secret"**.
