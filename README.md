@@ -36,23 +36,29 @@
 
 Follow these 3 simple steps to get your widget running in under 5 minutes.
 
-### Step 1: Create a Spotify App
-*You need this so Spotify knows it's okay to share your music info with the widget.*
+# Step 1: Create an app in your Spotify dashboard
 
-1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Log in with your Spotify account.
-3. Click **"Create App"**.
-   - **App Name:** `Batista736's Spotify Widget` .
-   - **App Description:** `Widget for my stream`.
-   - **Redirect URI:** This is important! Paste exactly this:
-     ```text
-     https://batz736.github.io/Spotify-Now-Playing-Widget/configure/
-     ```
-**Which API/SDKs are you planning to use?** Check Web API 
-     
-4. Click **Save**.
-5. On the next screen, click **"Settings"** (top right).
-6. Find **Client ID** and click **"View Client Secret"**.
+1. **Open your Spotify Developer Dashboard**:  
+   👉 https://developer.spotify.com/dashboard
+
+2. **Click "Create App"**
+
+3. **Fill in the following details:**
+
+   | Field | Value |
+   |-------|-------|
+   | **App name** | `Batista736's Spotify Widget` |
+   | **App description** | A personal Spotify widget for displaying playback status |
+   | **Redirect URI** | `https://batista736.github.io/spotify-widget/configure` |
+   | **API/SDKs** | ✅ Check **Web API** |
+
+4. **Agree to the terms** and click **Create**
+
+5. **Copy your credentials** from the app dashboard:
+   - `Client ID`
+   - `Client Secret` (click "Show client secret")
+
+> 💡 **Tip**: Keep your `Client Secret` private — never commit it to a public repository!
    - 👉 **Copy both of these codes.** You will need them in Step 2.
 
 ### Step 2: Generate Your Widget Link
